@@ -1,0 +1,123 @@
+---
+title: "Soil depth prediction: comparison of statistical approaches"
+author: "Horst"
+date: "15 de janeiro de 2018"
+output: bookdown::html_document2
+lang: pt
+---
+
+```{r, echo=FALSE, eval=FALSE}
+rmarkdown::render('main.Rmd', encoding = 'UTF-8', output_dir = "../docs")
+```
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE, warning=FALSE}
+library(magrittr)
+library(dplyr)
+library(glue)
+library(lattice)
+library(latticeExtra)
+library(georob)
+library(sp)
+library(mapview)
+library(raster)
+library(rmarkdown)
+library(caret)
+library(randomForest)
+```
+
+#Background
+Spatial patterns at solum depth (SD) are the result of complex environmental interactions. As our knowledge about the phenomena involved in the determination of this variable in nature is fragmented, describing the spatial variability of PS through models is difficult.
+
+Based upon the relationship between soil depth and topographic, the objective of this study was to investigate how much the choice of statistical method could improve the spatial prediction of soil depth.
+
+
+```{r}
+rm(list = ls())
+pontos <- read.csv('../data/GateadosDados.csv', dec = ".", sep= ";", stringsAsFactors = FALSE)
+pontos$PFd <- pontos$PF / 10 %>% round()
+pontos$coordX <- pontos$X
+pontos$coordY <- pontos$Y
+sp::coordinates(pontos) <- c('coordX' , 'coordY')
+wgs84utm22s <- sp::CRS('+proj=utm +zone=22 +south +ellps=WGS84 +datum=WGS84 +units=m +no_defs')
+sp::proj4string(pontos) <- wgs84utm22s
+```
+
+```{r}
+summary(pontos$PFd)
+```
+
+```{r fig.asp=1}
+histogram(pontos$PFd) + latticeExtra::layer(panel.grid(v = 0)) + latticeExtra::layer(panel.rug(pontos$PFd))
+```
+
+```{r, message=FALSE}
+DECLI <- raster::raster("../data/Covars/DECLI.tif")
+ELEV <- raster::raster("../data/Covars/ELEV.tif")
+VD <- raster::raster("../data/Covars/VD.tif")
+TWI <- raster::raster("../data/Covars/TWI.tif")
+CNBL <- raster::raster("../data/Covars/CNBL.tif")
+```
+
+```{r}
+pontos$DECLI <- raster::extract(DECLI, pontos)
+pontos$ELEV <- raster::extract(ELEV, pontos)
+pontos$VD <- raster::extract(VD, pontos)
+pontos$TWI <- raster::extract(TWI, pontos)
+pontos$CNBL <- raster::extract(CNBL, pontos)
+```
+
+```{r}
+form1 <- PFd ~ DECLI + ELEV + VD + TWI + CNBL
+form2 <- PFd ~ X + Y
+form3 <- PFd ~ DECLI + ELEV + VD + TWI + CNBL + X + Y
+```
+
+#RANDOM FOREST
+
+```{r}
+rf_fit1 <- caret::train(form1, data = pontos@data,
+                       method = "rf", tuneLength = 1, importance = TRUE, trControl = trainControl("LOOCV"))
+rf_fit1
+```
+
+```{r}
+rf_fit2 <- caret::train(form2, data = pontos@data,
+                       method = "rf", tuneLength = 1, importance = TRUE, trControl = trainControl("LOOCV"))
+rf_fit2
+```
+
+```{r}
+rf_fit3 <- caret::train(form3, data = pontos@data,
+                       method = "rf", tuneLength = 1, importance = TRUE, trControl = trainControl("LOOCV"))
+rf_fit3
+```
+
+#LINEAR REGRESSION
+
+```{r}
+lm_fit1 <- train(
+  form = form1, data = pontos@data, method = "lmStepAIC", tuneLength = 1, importance = TRUE,
+  na.action = na.omit, trControl = trainControl(method = "LOOCV"))
+
+lm_fit1
+```
+
+```{r}
+lm_fit2 <- train(
+  form = form2, data = pontos@data, method = "lmStepAIC", tuneLength = 1, importance = TRUE,
+  na.action = na.omit, trControl = trainControl(method = "LOOCV"))
+
+lm_fit2
+```
+
+```{r}
+lm_fit3 <- train(
+  form = form3, data = pontos@data, method = "lmStepAIC", tuneLength = 1, importance = TRUE,
+  na.action = na.omit, trControl = trainControl(method = "LOOCV"))
+
+lm_fit3
+```
