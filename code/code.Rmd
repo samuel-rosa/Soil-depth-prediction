@@ -60,7 +60,6 @@ ELEV <- raster::raster("../data/Covars/ELEV.tif")
 VD <- raster::raster("../data/Covars/VD.tif")
 TWI <- raster::raster("../data/Covars/TWI.tif")
 CNBL <- raster::raster("../data/Covars/CNBL.tif")
-AH <- raster::raster("../data/Covars/AH.tif")
 ASP <- raster::raster("../data/Covars/ASP.tif")
 CA <- raster::raster("../data/Covars/CA.tif")
 CSC <- raster::raster("../data/Covars/CSC.tif")
@@ -79,7 +78,6 @@ pontos$ELEV <- raster::extract(ELEV, pontos)
 pontos$VD <- raster::extract(VD, pontos)
 pontos$TWI <- raster::extract(TWI, pontos)
 pontos$CNBL <- raster::extract(CNBL, pontos)
-pontos$AH <- raster::extract(AH, pontos)
 pontos$ASP <- raster::extract(ASP, pontos)
 pontos$CA <- raster::extract(CA, pontos)
 pontos$CSC <- raster::extract(CSC, pontos)
@@ -95,7 +93,7 @@ pontos$GC <- raster::extract(GC, pontos)
 ```{r,include=FALSE}
 form1 <- PFd ~ X + Y
 form2 <- formula(paste("PFd", " ~ ", paste(colnames(pontos@data[,9:24]), collapse = " + ")))
-form3 <- PFd ~ DECLI + ELEV + VD + TWI + CNBL + AH + ASP + CA + CSC + 
+form3 <- PFd ~ DECLI + ELEV + VD + TWI + CNBL + ASP + CA + CSC + 
     LS + PLC + VDCN + RSP + TRI + TI + GC + X + Y
 ```
 
