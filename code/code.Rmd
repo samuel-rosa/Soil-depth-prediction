@@ -1,6 +1,6 @@
 ---
 title: "Soil depth prediction: comparison of statistical approaches"
-author: "Horst"
+author: "Taciara Zborowski Horst; Ricardo Simão Diniz Dalmolin; Jean Michel Moura-Bueno; Alessandro Samuel-Rosa"
 date: "15 de janeiro de 2018"
 output: bookdown::html_document2
 lang: pt
@@ -29,11 +29,7 @@ library(caret)
 library(randomForest)
 ```
 
-#Background
-Spatial patterns at solum depth (SD) are the result of complex environmental interactions. As our knowledge about the phenomena involved in the determination of this variable in nature is fragmented, describing the spatial variability of PS through models is difficult.
-
-Based upon the relationship between soil depth and topographic, the objective of this study was to investigate how much the choice of statistical method could improve the spatial prediction of soil depth.
-
+Based on the relationship between soil depth and topography, the objective of this study was to investigate how much the choice of the statistical method could improve the spatial prediction of soil depth. For this, we compared the performance of cross validation of multiple linear regression and random forest and formulations of three models, soil depth as a function of: i) geographic coordinates; (ii) topographic covariates; and (iii) covariables, topographies and geographic coordinates. For that, we use 102 observations of soil depth from an area of 109 ha of pinus at 29 years, in the city of Campo Belo do Sul, mountain region of the State of Santa Catarina, Brazil. The topograpy variables used in the models are derived from a DEM of 10 m resolution, namely, elevation, slope, LS factor, terrain ruggedness index, topographic wetness index, total insolation, analytical hillshading, aspect, catchment area, channel network base level, valley depth, cross-sectional curvature, vertical distance to channel network, total insolation, relative slope position, General curvature and profile curvature. To select the appropriate combination of statistical methods and model formulation we used the coefficient of determination (R2) and root mean square error (RMSE) to assess the performances. Soil depth was predicted for the whole area using the best model. Overall, there were slight variations in predictive performance differences between statistical approaches and model formulations. In our case study, the random forest model was the best method and spatially explicit models had values R2 higher and RMSE lower than non-spatial models Results show that the prediction accuracy did not improve using topograpy covariates, due to lack of correlation. The reason why the improvement of the prediction was not more significant is a low correlation of the predicted soil depth with used covariates. Since alternative, other prediction methods of the kriging and different resolutions will be tested.
 
 ```{r}
 rm(list = ls())
@@ -60,6 +56,17 @@ ELEV <- raster::raster("../data/Covars/ELEV.tif")
 VD <- raster::raster("../data/Covars/VD.tif")
 TWI <- raster::raster("../data/Covars/TWI.tif")
 CNBL <- raster::raster("../data/Covars/CNBL.tif")
+AH <- raster::raster("../data/Covars/AH.tif")
+ASP <- raster::raster("../data/Covars/ASP.tif")
+CA <- raster::raster("../data/Covars/CA.tif")
+CSC <- raster::raster("../data/Covars/CSC.tif")
+LS <- raster::raster("../data/Covars/LS.tif")
+PLC <- raster::raster("../data/Covars/PLC.tif")
+VDCN <- raster::raster("../data/Covars/VDCN.tif")
+RSP <- raster::raster("../data/Covars/RSP.tif")
+TRI <- raster::raster("../data/Covars/TRI.tif")
+TI <- raster::raster("../data/Covars/TI.tif")
+GC <- raster::raster("../data/Covars/GC.tif")
 ```
 
 ```{r}
@@ -68,12 +75,24 @@ pontos$ELEV <- raster::extract(ELEV, pontos)
 pontos$VD <- raster::extract(VD, pontos)
 pontos$TWI <- raster::extract(TWI, pontos)
 pontos$CNBL <- raster::extract(CNBL, pontos)
+pontos$AH <- raster::extract(AH, pontos)
+pontos$ASP <- raster::extract(ASP, pontos)
+pontos$CA <- raster::extract(CA, pontos)
+pontos$CSC <- raster::extract(CSC, pontos)
+pontos$LS <- raster::extract(LS, pontos)
+pontos$PLC <- raster::extract(PLC, pontos)
+pontos$VDCN <- raster::extract(VDCN, pontos)
+pontos$RSP <- raster::extract(RSP, pontos)
+pontos$TRI <- raster::extract(TRI, pontos)
+pontos$TI <- raster::extract(TI, pontos)
+pontos$GC <- raster::extract(GC, pontos)
 ```
 
 ```{r}
-form1 <- PFd ~ DECLI + ELEV + VD + TWI + CNBL
-form2 <- PFd ~ X + Y
-form3 <- PFd ~ DECLI + ELEV + VD + TWI + CNBL + X + Y
+form1 <- PFd ~ X + Y
+form2 <- formula(paste("PFd", " ~ ", paste(colnames(pontos@data[,9:24]), collapse = " + ")))
+form3 <- PFd ~ DECLI + ELEV + VD + TWI + CNBL + AH + ASP + CA + CSC + 
+    LS + PLC + VDCN + RSP + TRI + TI + GC + X + Y
 ```
 
 #RANDOM FOREST
