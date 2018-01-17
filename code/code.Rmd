@@ -29,7 +29,7 @@ library(caret)
 library(randomForest)
 ```
 
-Based on the relationship between soil depth and topography, the objective of this study was to investigate how much the choice of the statistical method could improve the spatial prediction of soil depth. For this, we compared the performance of cross validation of multiple linear regression and random forest and formulations of three models, soil depth as a function of: i) geographic coordinates; (ii) topographic covariates; and (iii) covariables, topographies and geographic coordinates. For that, we use 102 observations of soil depth from an area of 109 ha of pinus at 29 years, in the city of Campo Belo do Sul, mountain region of the State of Santa Catarina, Brazil. The topograpy variables used in the models are derived from a DEM of 10 m resolution, namely, elevation, slope, LS factor, terrain ruggedness index, topographic wetness index, total insolation, analytical hillshading, aspect, catchment area, channel network base level, valley depth, cross-sectional curvature, vertical distance to channel network, total insolation, relative slope position, general curvature and profile curvature. To select the appropriate combination of statistical methods and model formulation we used the coefficient of determination (R^2^) and root mean square error (RMSE) to assess the performances. Soil depth was predicted for the whole area using the best model. Overall, there were slight variations in predictive performance differences between statistical approaches and model formulations. In our case study, the random forest model was the best method and spatially explicit models had values R2 higher and RMSE lower than non-spatial models Results show that the prediction accuracy did not improve using topograpy covariates, due to lack of correlation. The reason why the improvement of the prediction was not more significant is a low correlation of the predicted soil depth with used covariates. Since alternative, other prediction methods of the kriging and different resolutions will be tested.
+Based on the relationship between soil depth and topography, the objective of this study was to investigate how much the choice of the statistical method could improve the spatial prediction of soil depth. For this, we compared the performance of cross validation of multiple linear regression and random forest and formulations of three models, soil depth as a function of: i) geographic coordinates; (ii) topographic covariates; and (iii) covariables, topographies and geographic coordinates. For that, we use 102 observations of soil depth from an area of 109 ha of pinus at 29 years, in the city of Campo Belo do Sul, mountain region of the State of Santa Catarina, Brazil. The topograpy variables used in the models are derived from a DEM of 10 m resolution, namely, elevation, slope, LS factor, terrain ruggedness index, topographic wetness index, total insolation, analytical hillshading, aspect, catchment area, channel network base level, valley depth, cross-sectional curvature, vertical distance to channel network, total insolation, relative slope position, general curvature and profile curvature. To select the appropriate combination of statistical methods and model formulation we used the coefficient of determination (R^2^) and root mean square error (RMSE) to assess the performances. Soil depth was predicted for the whole area using the best model. Overall, there were slight variations in predictive performance differences between statistical approaches and model formulations. In our case study, the random forest model was the best method and spatially explicit models had values R2 higher and RMSE lower than non-spatial models. Results show that the prediction accuracy did not improve using topograpy covariates, due to lack of correlation. The reason why the improvement of the prediction was not more significant is a low correlation of the predicted soil depth with used covariates. Since alternative, other prediction methods of the kriging and different resolutions will be tested.
 
 **Keywords:** Digital soil mapping; soil properties; soil tickness; enviroment covarieres.
 
@@ -61,6 +61,7 @@ VD <- raster::raster("../data/Covars/VD.tif")
 TWI <- raster::raster("../data/Covars/TWI.tif")
 CNBL <- raster::raster("../data/Covars/CNBL.tif")
 ASP <- raster::raster("../data/Covars/ASP.tif")
+ASP <- 180 - (ASP)
 CA <- raster::raster("../data/Covars/CA.tif")
 CSC <- raster::raster("../data/Covars/CSC.tif")
 LS <- raster::raster("../data/Covars/LS.tif")
@@ -91,52 +92,151 @@ pontos$GC <- raster::extract(GC, pontos)
 ```
 
 ```{r,include=FALSE}
+form <- PFd ~ DECLI + ELEV + VD + TWI
 form1 <- PFd ~ X + Y
-form2 <- formula(paste("PFd", " ~ ", paste(colnames(pontos@data[,9:24]), collapse = " + ")))
+form2 <- formula(paste("PFd", " ~ ", paste(colnames(pontos@data[,9:23]), collapse = " + ")))
 form3 <- PFd ~ DECLI + ELEV + VD + TWI + CNBL + ASP + CA + CSC + 
     LS + PLC + VDCN + RSP + TRI + TI + GC + X + Y
 ```
 
 ```{r, include=FALSE}
-#RANDOM FOREST
-rf_fit1 <- caret::train(form1, data = pontos@data,
-                       method = "rf", tuneLength = 1, importance = TRUE, trControl = trainControl("LOOCV"))
-rf_fit1
+#RANDOM FOREST FORM 1
+#rf_fit1 <- caret::train(form1, data = pontos@data,
+#                       method = "rf", tuneLength = 1, importance = TRUE, trControl = trainControl("LOOCV"))
+#rf_fit1
 ```
 
 ```{r, include=FALSE}
-rf_fit2 <- caret::train(form2, data = pontos@data,
-                       method = "rf", tuneLength = 1, importance = TRUE, trControl = trainControl("LOOCV"))
-rf_fit2
+#RANDOM FOREST FORM 2
+#rf_fit2 <- caret::train(form2, data = pontos@data,
+#                       method = "rf", tuneLength = 1, importance = TRUE, trControl = trainControl("LOOCV"))
+#rf_fit2
 ```
 
 ```{r,include=FALSE}
-rf_fit3 <- caret::train(form3, data = pontos@data,
-                       method = "rf", tuneLength = 1, importance = TRUE, trControl = trainControl("LOOCV"))
-rf_fit3
+#RANDOM FOREST FORM 3
+#rf_fit3 <- caret::train(form3, data = pontos@data,
+#                       method = "rf", tuneLength = 1, importance = TRUE, trControl = trainControl("LOOCV"))
+#rf_fit3
 ```
 
 ```{r, include=FALSE}
-#LINEAR REGRESSION
-lm_fit1 <- train(
-  form = form1, data = pontos@data, method = "lmStepAIC", tuneLength = 1, importance = TRUE,
-  na.action = na.omit, trControl = trainControl(method = "LOOCV"))
+#LINEAR REGRESSION FORM 1
+#lm_fit1 <- train(
+#  form = form1, data = pontos@data, method = "lmStepAIC", tuneLength = 1, importance = TRUE,
+#  na.action = na.omit, trControl = trainControl(method = "LOOCV"))
 
-lm_fit1
+#lm_fit1
 ```
 
 ```{r, include=FALSE}
-lm_fit2 <- train(
-  form = form2, data = pontos@data, method = "lmStepAIC", tuneLength = 1, importance = TRUE,
-  na.action = na.omit, trControl = trainControl(method = "LOOCV"))
+#LINEAR REGRESSION FORM 2
+#lm_fit2 <- train(
+#  form = form2, data = pontos@data, method = "lmStepAIC", tuneLength = 1, importance = TRUE,
+#  na.action = na.omit, trControl = trainControl(method = "LOOCV"))
 
-lm_fit2
+#lm_fit2
 ```
 
 ```{r, include=FALSE}
-lm_fit3 <- train(
-  form = form3, data = pontos@data, method = "lmStepAIC", tuneLength = 1, importance = TRUE,
-  na.action = na.omit, trControl = trainControl(method = "LOOCV"))
+#LINEAR REGRESSION FORM 3
+#lm_fit3 <- train(
+#  form = form3, data = pontos@data, method = "lmStepAIC", tuneLength = 1, importance = TRUE,
+#  na.action = na.omit, trControl = trainControl(method = "LOOCV"))
 
-lm_fit3
+#lm_fit3
+```
+
+
+<!-- ASR: Antes de computar o variograma omnidirecional, é importante verificar se há efeitos direcionais. -->
+
+```{r}
+#modelo linear de variação espacial
+
+distmax <-dist(pontos@coords) %>% max() / 3
+limites <- seq(0, distmax, length.out = 20)
+vario <- georob::sample.variogram(form,
+    data= pontos, locations = ~ coordX + coordY, lag.dist.def = limites, xy.angle.def = c(0, 22.5, 67.5, 112.5, 157.5, 180), estimator = "matheron") %>%
+plot(ylab = 'Seminvariância', xlab = 'Distância de separação (m)', annotate.npairs = TRUE, main = "Semivariograma")
+```
+
+```{r fig.asp=1, fig.width=7, fig.height=7, fig.cap=" Variograma amostral"}
+distmax <-dist(pontos@coords) %>% max() / 3
+limites <- seq(0, distmax, length.out = 20)
+vario <- georob::sample.variogram(form,
+    data= pontos, locations = ~ coordX + coordY, lag.dist.def = limites, estimator = "matheron") %>%
+plot(ylab = 'Seminvariância', xlab = 'Distância de separação (m)', annotate.npairs = TRUE, main = "Semivariograma")
+```
+
+```{r}
+vario_fit <- 
+  georob::fit.variogram.model(
+  vario, variogram.model = 'RMexp', param = c(variance = 10, nugget = 0.5, scale = 70), weighting.method = "cressie", method = "BFGS")
+summary(vario_fit)
+```
+
+```{r, fig.asp = 1, fig.cap=" Variograma amostral (em preto) e função exponencial a ele ajustado (vermelho)"}
+plot(vario, xlab = 'Distância de separação (m)', ylab = 'Semivariância', annotate.npairs = TRUE)
+lines(vario_fit, col = "red", lty = 'dashed')
+```
+
+```{r, warning=FALSE}
+nugget <- 0.25
+vario_fit_error <- georob::georob(
+   form, pontos, locations = ~ coordX + coordY, variogram.model = 'RMexp', 
+ param = c(variance = vario_fit$variogram.object[[1]]$param[['variance']], 
+           nugget = nugget,
+           snugget = vario_fit$variogram.object[[1]]$param[['nugget']] - nugget,
+           scale = vario_fit$variogram.object[[1]]$param[['scale']]),
+ fit.param = georob::default.fit.param(nugget = FALSE, snugget = TRUE),
+ tuning.psi = 1000, control = georob::control.georob(initial.fixef = 'lm'))
+summary(vario_fit_error)
+```
+
+<!-- ASR: Claramente existe uma estrutura de autocorrelação espacial estruturada à 200-400 metros. Talvez seja um efeito direcional. -->
+```{r, fig.asp=1, fig.cap=" Variograma amostral (em preto) do modelo linear da profundidade do solum e a função exponencial a ele ajustada (azul) e a função ajustada com erro de medida fixo"}
+plot(vario)
+lines(vario_fit, col = "blue")
+lines(vario_fit_error, col = "red")
+```
+
+```{r}
+grid <- stack(DECLI, ELEV, TWI, VD)
+grid <- as(grid, 'SpatialPointsDataFrame')
+colnames(grid@coords) <- colnames(pontos@coords)
+```
+
+```{r, fig.width=10, warning=FALSE,  fig.cap= "Mapas de predição - saída extendida do georob"}
+#ESPACIAL
+pred_ponto <- predict(
+  vario_fit_error, newdata = grid, type = "response", signif = 0.95,
+  control = georob::control.predict.georob(extended.output = TRUE))
+sp::gridded(pred_ponto) <- TRUE
+spplot(pred_ponto)
+```
+
+```{r, fig.width=10}
+at <- pred_ponto@data[, c("pred", "lower", "upper")] %>% range(na.rm = TRUE)
+at <- seq(at[1], at[2], length.out = 20)
+```
+
+```{r, fig.asp=1}
+spplot(pred_ponto, zcol = "lower", at = at, main="Limite inferior")
+spplot(pred_ponto, zcol="pred", at=at, main="Realização mais provável")
+spplot(pred_ponto, zcol="upper", at=at, main="Limite superior")
+```
+
+```{r}
+#AVALIAÇÃO DA QUALIDADE
+nset <- length(pontos) - 1
+validacao <- georob::cv(vario_fit_error, nset = nset)
+summary(validacao)
+```
+
+```{r}
+1 - sum((validacao$pred$data - validacao$pred$pred)^2) / sum((validacao$pred$data - mean(validacao$pred$data))^2)
+```
+
+```{r}
+plot(validacao)
 ```
