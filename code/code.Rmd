@@ -29,31 +29,6 @@ library(caret)
 library(randomForest)
 ```
 
-```{r}
-fstats <- function(y, yhat) {n              <- length(y)
-                             r              <- cor(y, yhat)
-                             lmy            <- lm(y~yhat)
-                             a              <- coefficients(lmy)[1]
-                             b              <- coefficients(lmy)[2]
-                             r2             <- summary(lmy)$r.squared[1]
-                             bias           <- mean(yhat)-mean(y)
-                             msd            <- sum((yhat-y)^2)/n
-                             rmse           <- sqrt(msd)
-                             msd.c          <- sum((yhat-bias-y)^2)/n
-                             rmse.c         <- sqrt(msd.c)
-                             sb             <- (mean(yhat)-mean(y))^2
-                             nu             <- ((1-b)^2)*(var(yhat)*((n-1)/n))
-                             lc             <- (1-r^2)*(var(y)*((n-1)/n))
-                             rpd            <- sd(y)/rmse
-                             q1             <- quantile(y)[2]
-                             q3             <- quantile(y)[4]
-                             rpiq           <- (q3-q1)/rmse
-                             error.s        <- round(c(r2, rmse, bias),3)
-                             names(error.s) <- c("R2", "RMSE", "bias")
-                             return(error.s)}
-```
-
-
 #CONF1
 
 
