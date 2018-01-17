@@ -29,12 +29,6 @@ library(caret)
 library(randomForest)
 ```
 
-Based on the relationship between soil depth and topography, the objective of this study was to investigate how much the choice of the statistical method could improve the spatial prediction of soil depth. For this, we compared the performance of cross validation of multiple linear regression and random forest and formulations of three models, soil depth as a function of: i) geographic coordinates; (ii) topographic covariates; and (iii) covariables, topographies and geographic coordinates. For that, we use 102 observations of soil depth from an area of 109 ha of pinus at 29 years, in the city of Campo Belo do Sul, mountain region of the State of Santa Catarina, Brazil. The topograpy variables used in the models are derived from a DEM of 10 m resolution, namely, elevation, slope, LS factor, terrain ruggedness index, topographic wetness index, total insolation, analytical hillshading, aspect, catchment area, channel network base level, valley depth, cross-sectional curvature, vertical distance to channel network, total insolation, relative slope position, general curvature and profile curvature. To select the appropriate combination of statistical methods and model formulation we used the coefficient of determination (R^2^) and root mean square error (RMSE) to assess the performances. Soil depth was predicted for the whole area using the best model. Overall, there were slight variations in predictive performance differences between statistical approaches and model formulations. In our case study, the random forest model was the best method and spatially explicit models had values R2 higher and RMSE lower than non-spatial models. Results show that the prediction accuracy did not improve using topograpy covariates, due to lack of correlation. The reason why the improvement of the prediction was not more significant is a low correlation of the predicted soil depth with used covariates. Since alternative, other prediction methods of the kriging and different resolutions will be tested.
-
-**Keywords:** Digital soil mapping; soil properties; soil tickness; enviroment covarieres.
-
-**Financial Support:** Coordenação de Aperfeiçoamento de Pessoal de Nível Superior (CAPES).
-
 ```{r, include=FALSE}
 rm(list = ls())
 pontos <- read.csv('../data/GateadosDados.csv', dec = ".", sep= ";", stringsAsFactors = FALSE)
@@ -147,11 +141,26 @@ form3 <- PFd ~ DECLI + ELEV + VD + TWI + CNBL + ASP + CA + CSC +
 #lm_fit3
 ```
 
+# VERSÃO 2
 
-<!-- ASR: Antes de computar o variograma omnidirecional, é importante verificar se há efeitos direcionais. -->
+## REGRESSÃO
+```{r}
+form <- PFd ~ DECLI + ELEV + VD + TWI
+```
+
+```{r, include=FALSE}
+#LINEAR REGRESSION FORM 2
+lm_fit <- train(
+  form = form, data = pontos@data, method = "lmStepAIC", tuneLength = 1, importance = TRUE,
+  na.action = na.omit, trControl = trainControl(method = "LOOCV"))
+
+lm_fit
+```
+
+#MODELO MISTO
 
 ```{r}
-#modelo linear de variação espacial
+#modelo misto de variação espacial
 
 distmax <-dist(pontos@coords) %>% max() / 3
 limites <- seq(0, distmax, length.out = 20)
