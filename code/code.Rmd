@@ -55,7 +55,7 @@ VD <- raster::raster("../data/Covars/VD.tif")
 TWI <- raster::raster("../data/Covars/TWI.tif")
 CNBL <- raster::raster("../data/Covars/CNBL.tif")
 ASP <- raster::raster("../data/Covars/ASP.tif")
-ASP <- 180 - (ASP)
+# ASP <- 180 - (ASP) # ASP is in radians. So this does not make sense.
 CA <- raster::raster("../data/Covars/CA.tif")
 CSC <- raster::raster("../data/Covars/CSC.tif")
 LS <- raster::raster("../data/Covars/LS.tif")
@@ -165,14 +165,15 @@ lm_fit3
 
 #MODELO LINEAR MISTO
 
-```{r}
+```{r, fig.asp=1}
+# ASR: set ratio between x and y axes to 1.
 #variograma direcional
 
 distmax <-dist(pontos@coords) %>% max() / 3
 limites <- seq(0, distmax, length.out = 20)
 vario <- georob::sample.variogram(form,
     data= pontos, locations = ~ coordX + coordY, lag.dist.def = limites, xy.angle.def = c(0, 22.5, 67.5, 112.5, 157.5, 180), estimator = "matheron") %>%
-plot(ylab = 'Seminvariância', xlab = 'Distância de separação (m)', annotate.npairs = TRUE, main = "Semivariograma")
+plot(ylab = 'Seminvariância', xlab = 'Distância de separação (m)', annotate.npairs = TRUE, main = "Semivariograma", type = "b") # ASR: use lines and points to see the variogram
 ```
 
 ```{r fig.asp=1, fig.width=7, fig.height=7, fig.cap=" Variograma amostral"}
