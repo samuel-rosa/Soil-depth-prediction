@@ -86,6 +86,7 @@ pontos$GC <- raster::extract(GC, pontos)
 ```
 
 ```{r,include=FALSE}
+#formulação dos modelos
 form <- PFd ~ DECLI + ELEV + VD + TWI
 form1 <- PFd ~ X + Y
 form2 <- formula(paste("PFd", " ~ ", paste(colnames(pontos@data[,9:23]), collapse = " + ")))
@@ -93,63 +94,40 @@ form3 <- PFd ~ DECLI + ELEV + VD + TWI + CNBL + ASP + CA + CSC +
     LS + PLC + VDCN + RSP + TRI + TI + GC + X + Y
 ```
 
+Modelo Random forest e 4 formulações (excluir)
+
+```{r, include=FALSE}
+#RANDOM FOREST FORM
+rf_fit <- caret::train(form, data = pontos@data,
+                       method = "rf", tuneLength = 1, importance = TRUE, trControl = trainControl("LOOCV"))
+rf_fit
+```
+
 ```{r, include=FALSE}
 #RANDOM FOREST FORM 1
-#rf_fit1 <- caret::train(form1, data = pontos@data,
-#                       method = "rf", tuneLength = 1, importance = TRUE, trControl = trainControl("LOOCV"))
-#rf_fit1
+rf_fit1 <- caret::train(form1, data = pontos@data,
+                       method = "rf", tuneLength = 1, importance = TRUE, trControl = trainControl("LOOCV"))
+rf_fit1
 ```
 
 ```{r, include=FALSE}
 #RANDOM FOREST FORM 2
-#rf_fit2 <- caret::train(form2, data = pontos@data,
-#                       method = "rf", tuneLength = 1, importance = TRUE, trControl = trainControl("LOOCV"))
-#rf_fit2
+rf_fit2 <- caret::train(form2, data = pontos@data,
+                       method = "rf", tuneLength = 1, importance = TRUE, trControl = trainControl("LOOCV"))
+rf_fit2
 ```
 
 ```{r,include=FALSE}
 #RANDOM FOREST FORM 3
-#rf_fit3 <- caret::train(form3, data = pontos@data,
-#                       method = "rf", tuneLength = 1, importance = TRUE, trControl = trainControl("LOOCV"))
-#rf_fit3
+rf_fit3 <- caret::train(form3, data = pontos@data,
+                       method = "rf", tuneLength = 1, importance = TRUE, trControl = trainControl("LOOCV"))
+rf_fit3
 ```
+
+Regressão Linear múltipla e 4 formulações
 
 ```{r, include=FALSE}
-#LINEAR REGRESSION FORM 1
-#lm_fit1 <- train(
-#  form = form1, data = pontos@data, method = "lmStepAIC", tuneLength = 1, importance = TRUE,
-#  na.action = na.omit, trControl = trainControl(method = "LOOCV"))
-
-#lm_fit1
-```
-
-```{r, include=FALSE}
-#LINEAR REGRESSION FORM 2
-#lm_fit2 <- train(
-#  form = form2, data = pontos@data, method = "lmStepAIC", tuneLength = 1, importance = TRUE,
-#  na.action = na.omit, trControl = trainControl(method = "LOOCV"))
-
-#lm_fit2
-```
-
-```{r, include=FALSE}
-#LINEAR REGRESSION FORM 3
-#lm_fit3 <- train(
-#  form = form3, data = pontos@data, method = "lmStepAIC", tuneLength = 1, importance = TRUE,
-#  na.action = na.omit, trControl = trainControl(method = "LOOCV"))
-
-#lm_fit3
-```
-
-# VERSÃO 2
-
-## REGRESSÃO
-```{r}
-form <- PFd ~ DECLI + ELEV + VD + TWI
-```
-
-```{r, include=FALSE}
-#LINEAR REGRESSION FORM 2
+#LINEAR REGRESSION FORM
 lm_fit <- train(
   form = form, data = pontos@data, method = "lmStepAIC", tuneLength = 1, importance = TRUE,
   na.action = na.omit, trControl = trainControl(method = "LOOCV"))
@@ -157,10 +135,38 @@ lm_fit <- train(
 lm_fit
 ```
 
-#MODELO MISTO
+```{r, include=FALSE}
+#LINEAR REGRESSION FORM 1
+lm_fit1 <- train(
+  form = form1, data = pontos@data, method = "lmStepAIC", tuneLength = 1, importance = TRUE,
+  na.action = na.omit, trControl = trainControl(method = "LOOCV"))
+
+lm_fit1
+```
+
+```{r, include=FALSE}
+#LINEAR REGRESSION FORM 2
+lm_fit2 <- train(
+  form = form2, data = pontos@data, method = "lmStepAIC", tuneLength = 1, importance = TRUE,
+  na.action = na.omit, trControl = trainControl(method = "LOOCV"))
+
+lm_fit2
+```
+
+```{r, include=FALSE}
+#LINEAR REGRESSION FORM 3
+lm_fit3 <- train(
+  form = form3, data = pontos@data, method = "lmStepAIC", tuneLength = 1, importance = TRUE,
+  na.action = na.omit, trControl = trainControl(method = "LOOCV"))
+
+lm_fit3
+```
+
+
+#MODELO LINEAR MISTO
 
 ```{r}
-#modelo misto de variação espacial
+#variograma direcional
 
 distmax <-dist(pontos@coords) %>% max() / 3
 limites <- seq(0, distmax, length.out = 20)
@@ -178,6 +184,7 @@ plot(ylab = 'Seminvariância', xlab = 'Distância de separação (m)', annotate.
 ```
 
 ```{r}
+#ajustei uma função sem fixar o nugget
 vario_fit <- 
   georob::fit.variogram.model(
   vario, variogram.model = 'RMexp', param = c(variance = 10, nugget = 0.5, scale = 70), weighting.method = "cressie", method = "BFGS")
@@ -199,10 +206,10 @@ vario_fit_error <- georob::georob(
            scale = vario_fit$variogram.object[[1]]$param[['scale']]),
  fit.param = georob::default.fit.param(nugget = FALSE, snugget = TRUE),
  tuning.psi = 1000, control = georob::control.georob(initial.fixef = 'lm'))
+
 summary(vario_fit_error)
 ```
 
-<!-- ASR: Claramente existe uma estrutura de autocorrelação espacial estruturada à 200-400 metros. Talvez seja um efeito direcional. -->
 ```{r, fig.asp=1, fig.cap=" Variograma amostral (em preto) do modelo linear da profundidade do solum e a função exponencial a ele ajustada (azul) e a função ajustada com erro de medida fixo"}
 plot(vario)
 lines(vario_fit, col = "blue")
