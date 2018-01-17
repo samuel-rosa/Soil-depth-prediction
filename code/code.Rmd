@@ -106,9 +106,6 @@ form2 <-  PFd ~ DECLI + ELEV + VD + TWI + CNBL + X + Y
 rf_fit <- caret::train(form, data = pontos@data,
                        method = "rf", tuneLength = 1, importance = TRUE, trControl = trainControl("LOOCV"))
 rf_fit
-
-train.stats <- fstats(pontos$PFd, predict(rf_fit))=
-train.stats
 ```
 
 ```{r, include=FALSE}
@@ -117,8 +114,7 @@ rf_fit2 <- caret::train(form2, data = pontos@data,
                        method = "rf", tuneLength = 1, importance = TRUE, trControl = trainControl("LOOCV"))
 rf_fit2
 
-train.stats <- fstats(pontos$PFd, predict(rf_fit2))
-train.stats
+
 ```
 
 ```{r,include=FALSE}
@@ -127,8 +123,6 @@ rf_fit3 <- caret::train(form3, data = pontos@data,
                        method = "rf", tuneLength = 1, importance = TRUE, trControl = trainControl("LOOCV"))
 rf_fit3
 
-train.stats <- fstats(pontos$PFd, predict(rf_fit3))
-train.stats
 ```
 
 
@@ -141,11 +135,8 @@ lm_fit <- train(
   form = form, data = pontos@data, method = "lmStepAIC", tuneLength = 1, importance = TRUE,
   na.action = na.omit, trControl = trainControl(method = "LOOCV"))
 
-summary(lm_fit)
+lm_fit
 
-# Perform validation
-train.stats <- fstats(pontos$PFd, predict(lm_fit)) # Compute training stats
-train.stats
 ```
 
 ```{r, include=FALSE}
@@ -155,9 +146,6 @@ lm_fit2 <- train(
   na.action = na.omit, trControl = trainControl(method = "LOOCV"))
 
 summary(lm_fit2)
-
-train.stats <- fstats(pontos$PFd, predict(lm_fit2))# Compute training stats
-train.stats
 ```
 
 ```{r, include=FALSE}
@@ -168,8 +156,6 @@ lm_fit3 <- train(
 
 summary(lm_fit3)
 
-train.stats <- fstats(pontos$PFd, predict(lm_fit3))# Compute training stats
-train.stats
 ```
 
 #CONF2
