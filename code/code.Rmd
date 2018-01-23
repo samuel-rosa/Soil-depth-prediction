@@ -4,6 +4,8 @@ author: "Taciara Zborowski Horst; Ricardo Simão Diniz Dalmolin; Jean Michel Mou
 date: "15 de janeiro de 2018"
 output: bookdown::html_document2
 lang: pt
+editor_options: 
+  chunk_output_type: inline
 ---
 
 ```{r, echo=FALSE, eval=FALSE}
@@ -29,13 +31,12 @@ library(caret)
 library(randomForest)
 ```
 
-```{r, include=FALSE}
+```{r}
+#KRIG
 rm(list = ls())
 pontos <- read.csv('../data/GateadosDados.csv', dec = ".", sep= ";", stringsAsFactors = FALSE)
 pontos$PFd <- pontos$PF / 10 %>% round()
-pontos$coordX <- pontos$X
-pontos$coordY <- pontos$Y
-sp::coordinates(pontos) <- c('coordX' , 'coordY')
+sp::coordinates(pontos) <- c('X' , 'Y')
 wgs84utm22s <- sp::CRS('+proj=utm +zone=22 +south +ellps=WGS84 +datum=WGS84 +units=m +no_defs')
 sp::proj4string(pontos) <- wgs84utm22s
 ```
@@ -54,17 +55,6 @@ ELEV <- raster::raster("../data/Covars/ELEV.tif")
 VD <- raster::raster("../data/Covars/VD.tif")
 TWI <- raster::raster("../data/Covars/TWI.tif")
 CNBL <- raster::raster("../data/Covars/CNBL.tif")
-ASP <- raster::raster("../data/Covars/ASP.tif")
-# ASP <- 180 - (ASP) # ASP is in radians. So this does not make sense.
-CA <- raster::raster("../data/Covars/CA.tif")
-CSC <- raster::raster("../data/Covars/CSC.tif")
-LS <- raster::raster("../data/Covars/LS.tif")
-PLC <- raster::raster("../data/Covars/PLC.tif")
-VDCN <- raster::raster("../data/Covars/VDCN.tif")
-RSP <- raster::raster("../data/Covars/RSP.tif")
-TRI <- raster::raster("../data/Covars/TRI.tif")
-TI <- raster::raster("../data/Covars/TI.tif")
-GC <- raster::raster("../data/Covars/GC.tif")
 ```
 
 ```{r, include=FALSE}
@@ -73,58 +63,36 @@ pontos$ELEV <- raster::extract(ELEV, pontos)
 pontos$VD <- raster::extract(VD, pontos)
 pontos$TWI <- raster::extract(TWI, pontos)
 pontos$CNBL <- raster::extract(CNBL, pontos)
-pontos$ASP <- raster::extract(ASP, pontos)
-pontos$CA <- raster::extract(CA, pontos)
-pontos$CSC <- raster::extract(CSC, pontos)
-pontos$LS <- raster::extract(LS, pontos)
-pontos$PLC <- raster::extract(PLC, pontos)
-pontos$VDCN <- raster::extract(VDCN, pontos)
-pontos$RSP <- raster::extract(RSP, pontos)
-pontos$TRI <- raster::extract(TRI, pontos)
-pontos$TI <- raster::extract(TI, pontos)
-pontos$GC <- raster::extract(GC, pontos)
 ```
 
 ```{r,include=FALSE}
 #formulação dos modelos
-form <- PFd ~ DECLI + ELEV + VD + TWI
-form1 <- PFd ~ X + Y
-form2 <- formula(paste("PFd", " ~ ", paste(colnames(pontos@data[,9:23]), collapse = " + ")))
-form3 <- PFd ~ DECLI + ELEV + VD + TWI + CNBL + ASP + CA + CSC + 
-    LS + PLC + VDCN + RSP + TRI + TI + GC + X + Y
+form <- PFd ~ DECLI + ELEV + VD + TWI + CNBL
+form <- PFd ~ X + Y
+form <- PFd ~ DECLI + ELEV + VD + TWI + CNBL + X + Y
+form <- PFd ~ 1
+form <- PFd ~ DECLI
 ```
 
-Modelo Random forest e 4 formulações (excluir)
+#Random forest
 
 ```{r, include=FALSE}
 #RANDOM FOREST FORM
 rf_fit <- caret::train(form, data = pontos@data,
                        method = "rf", tuneLength = 1, importance = TRUE, trControl = trainControl("LOOCV"))
 rf_fit
+
+#spatial prediction
+beginCluster()
+prediction_rf_fit <- 
+  clusterR(brick(DECLI, ELEV, VD, TWI, CNBL), raster::predict, 
+           args = list(model = rf_fit, type = "raw", index = 1))
+endCluster()
+
+plot(prediction_rf_fit)
 ```
 
-```{r, include=FALSE}
-#RANDOM FOREST FORM 1
-rf_fit1 <- caret::train(form1, data = pontos@data,
-                       method = "rf", tuneLength = 1, importance = TRUE, trControl = trainControl("LOOCV"))
-rf_fit1
-```
-
-```{r, include=FALSE}
-#RANDOM FOREST FORM 2
-rf_fit2 <- caret::train(form2, data = pontos@data,
-                       method = "rf", tuneLength = 1, importance = TRUE, trControl = trainControl("LOOCV"))
-rf_fit2
-```
-
-```{r,include=FALSE}
-#RANDOM FOREST FORM 3
-rf_fit3 <- caret::train(form3, data = pontos@data,
-                       method = "rf", tuneLength = 1, importance = TRUE, trControl = trainControl("LOOCV"))
-rf_fit3
-```
-
-Regressão Linear múltipla e 4 formulações
+#Linear regression
 
 ```{r, include=FALSE}
 #LINEAR REGRESSION FORM
@@ -132,55 +100,36 @@ lm_fit <- train(
   form = form, data = pontos@data, method = "lmStepAIC", tuneLength = 1, importance = TRUE,
   na.action = na.omit, trControl = trainControl(method = "LOOCV"))
 
-lm_fit
+#summary(lm_fit)
+#fitted(lm_fit) # predicted values
+
+#spatial prediction
+
+beginCluster()
+prediction_lm_fit <- 
+  clusterR(brick(DECLI, ELEV, VD, TWI, CNBL), raster::predict, 
+           args = list(model = lm_fit, type = "raw", index = 1))
+endCluster()
+
+plot(prediction_lm_fit)
 ```
 
-```{r, include=FALSE}
-#LINEAR REGRESSION FORM 1
-lm_fit1 <- train(
-  form = form1, data = pontos@data, method = "lmStepAIC", tuneLength = 1, importance = TRUE,
-  na.action = na.omit, trControl = trainControl(method = "LOOCV"))
-
-lm_fit1
-```
-
-```{r, include=FALSE}
-#LINEAR REGRESSION FORM 2
-lm_fit2 <- train(
-  form = form2, data = pontos@data, method = "lmStepAIC", tuneLength = 1, importance = TRUE,
-  na.action = na.omit, trControl = trainControl(method = "LOOCV"))
-
-lm_fit2
-```
-
-```{r, include=FALSE}
-#LINEAR REGRESSION FORM 3
-lm_fit3 <- train(
-  form = form3, data = pontos@data, method = "lmStepAIC", tuneLength = 1, importance = TRUE,
-  na.action = na.omit, trControl = trainControl(method = "LOOCV"))
-
-lm_fit3
-```
-
-
-#MODELO LINEAR MISTO
+# linear mixed effects model
 
 ```{r, fig.asp=1}
-# ASR: set ratio between x and y axes to 1.
-#variograma direcional
-
 distmax <-dist(pontos@coords) %>% max() / 3
 limites <- seq(0, distmax, length.out = 20)
 vario <- georob::sample.variogram(form,
-    data= pontos, locations = ~ coordX + coordY, lag.dist.def = limites, xy.angle.def = c(0, 22.5, 67.5, 112.5, 157.5, 180), estimator = "matheron") %>%
+    data= pontos, locations = ~ X + Y, lag.dist.def = limites, xy.angle.def = c(0, 22.5, 67.5, 112.5, 157.5, 180), estimator = "matheron") %>%
 plot(ylab = 'Seminvariância', xlab = 'Distância de separação (m)', annotate.npairs = TRUE, main = "Semivariograma", type = "b") # ASR: use lines and points to see the variogram
 ```
 
-```{r fig.asp=1, fig.width=7, fig.height=7, fig.cap=" Variograma amostral"}
+```{r}
 distmax <-dist(pontos@coords) %>% max() / 3
 limites <- seq(0, distmax, length.out = 20)
+
 vario <- georob::sample.variogram(form,
-    data= pontos, locations = ~ coordX + coordY, lag.dist.def = limites, estimator = "matheron") %>%
+    data= pontos, locations = ~ X + Y, lag.dist.def = limites, estimator = "matheron") %>%
 plot(ylab = 'Seminvariância', xlab = 'Distância de separação (m)', annotate.npairs = TRUE, main = "Semivariograma")
 ```
 
@@ -192,15 +141,10 @@ vario_fit <-
 summary(vario_fit)
 ```
 
-```{r, fig.asp = 1, fig.cap=" Variograma amostral (em preto) e função exponencial a ele ajustado (vermelho)"}
-plot(vario, xlab = 'Distância de separação (m)', ylab = 'Semivariância', annotate.npairs = TRUE)
-lines(vario_fit, col = "red", lty = 'dashed')
-```
-
 ```{r, warning=FALSE}
 nugget <- 0.25
 vario_fit_error <- georob::georob(
-   form, pontos, locations = ~ coordX + coordY, variogram.model = 'RMexp', 
+   form, pontos, locations = ~ X + Y, variogram.model = 'RMexp', 
  param = c(variance = vario_fit$variogram.object[[1]]$param[['variance']], 
            nugget = nugget,
            snugget = vario_fit$variogram.object[[1]]$param[['nugget']] - nugget,
@@ -211,14 +155,14 @@ vario_fit_error <- georob::georob(
 summary(vario_fit_error)
 ```
 
-```{r, fig.asp=1, fig.cap=" Variograma amostral (em preto) do modelo linear da profundidade do solum e a função exponencial a ele ajustada (azul) e a função ajustada com erro de medida fixo"}
+```{r}
 plot(vario)
 lines(vario_fit, col = "blue")
 lines(vario_fit_error, col = "red")
 ```
 
 ```{r}
-grid <- stack(DECLI, ELEV, TWI, VD)
+grid <- stack(DECLI, ELEV, TWI, VD, CNBL)
 grid <- as(grid, 'SpatialPointsDataFrame')
 colnames(grid@coords) <- colnames(pontos@coords)
 ```
@@ -226,21 +170,13 @@ colnames(grid@coords) <- colnames(pontos@coords)
 ```{r, fig.width=10, warning=FALSE,  fig.cap= "Mapas de predição - saída extendida do georob"}
 #ESPACIAL
 pred_ponto <- predict(
-  vario_fit_error, newdata = grid, type = "response", signif = 0.95,
+  vario_fit_error, newdata = grid, locations = ~ X + Y, type = "response", signif = 0.95,
   control = georob::control.predict.georob(extended.output = TRUE))
 sp::gridded(pred_ponto) <- TRUE
-spplot(pred_ponto)
 ```
 
-```{r, fig.width=10}
-at <- pred_ponto@data[, c("pred", "lower", "upper")] %>% range(na.rm = TRUE)
-at <- seq(at[1], at[2], length.out = 20)
-```
-
-```{r, fig.asp=1}
-spplot(pred_ponto, zcol = "lower", at = at, main="Limite inferior")
+```{r}
 spplot(pred_ponto, zcol="pred", at=at, main="Realização mais provável")
-spplot(pred_ponto, zcol="upper", at=at, main="Limite superior")
 ```
 
 ```{r}
@@ -257,3 +193,4 @@ summary(validacao)
 ```{r}
 plot(validacao)
 ```
+
